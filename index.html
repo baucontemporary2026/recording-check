@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쇼케이스 녹음 출석</title>
+    <!-- SheetJS (엑셀 다운로드용) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb; 
+            --primary-light: #eff6ff;
+            --primary-border: #93c5fd;
+            --bg: #f0f4f9; 
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --admin-color: #334155;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            max-width: 680px; 
+            margin: 30px auto; 
+            padding: 0 16px; 
+            background-color: var(--bg); 
+            color: var(--text-main); 
+            line-height: 1.5;
+            transition: background-color 0.3s ease;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 28px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); 
+            margin-bottom: 24px; 
+            border: 1px solid var(--primary-border); 
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header-btns { display: flex; gap: 6px; }
+        h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--text-main); }
+        
+        .form-group { margin-bottom: 22px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: var(--text-sub); }
+        
+        input[type="text"] { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 1.5px solid #cbd5e1; 
+            border-radius: 10px; 
+            box-sizing: border-box; 
+            font-size: 15px; 
+            outline: none;
+            transition: all 0.2s;
+            background-color: #fff;
+            color: var(--text-main);
+        }
+        input[type="text"]:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px var(--primary-light); 
+        }
+
+        .session-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .session-btn {
+            background: white;
+            border: 1px solid #cbd5e1;
+            padding: 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: #334155;
+            user-select: none;
+        }
+        .session-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+        .session-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
+
+        .time-picker-wrapper { 
+            background: var(--primary-light); 
+            border: 1px solid var(--primary-border); 
+            padding: 18px; 
+            border-radius: 12px; 
+            transition: all 0.3s ease;
+        }
+        
+        .time-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin: 12px 0 6px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .time-section-title:first-child { margin-top: 0; }
+
+        .time-grid { 
+            display: grid; 
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 6px; 
+            user-select: none; 
+        }
+        
+        .time-btn { 
+            background: white; 
+            border: 1px solid #cbd5e1; 
+            padding: 10px 0; 
+            font-size: 12px; 
+            font-weight: 600; 
+            text-align: center; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.15s ease; 
+            color: #334155; 
+        }
+        .time-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+        .time-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
+        .time-btn.in-range { background: white; color: var(--primary); border-color: var(--primary); font-weight: 700; }
+        
+        .time-summary-box {
+            margin-top: 16px;
+            background: #ffffff;
+            border: 1.5px solid var(--primary-border);
+            padding: 12px 16px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .time-summary-text { font-size: 14px; font-weight: 700; color: var(--primary); }
+        .btn-time-reset { 
+            background: #f1f5f9; 
+            color: #64748b; 
+            border: 1px solid #cbd5e1; 
+            padding: 5px 10px; 
+            font-size: 12px; 
+            font-weight: 600;
+            border-radius: 6px; 
+            cursor: pointer; 
+        }
+
+        .date-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .date-tab { padding: 7px 14px; font-size: 13px; font-weight: 600; background: #e2e8f0; border: none; border-radius: 20px; cursor: pointer; color: #475569; }
+        .date-tab.active { background: var(--primary); color: white; }
+
+        .search-box { margin-bottom: 16px; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { flex: 1; padding: 14px; font-size: 15px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .btn-submit { background: var(--primary); color: white; }
+        .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+        
+        .btn-top { background: var(--admin-color); color: white; padding: 8px 12px; font-size: 12px; border-radius: 8px; width: auto; flex: none; }
+        .btn-share { background: #059669; }
+
+        .admin-only { display: none; margin-top: 18px; padding: 16px; border: 1px dashed #ef4444; background-color: #fef2f2; border-radius: 10px; }
+        .admin-only.active { display: block; }
+        .admin-color-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #fee2e2; }
+        .admin-color-picker label { margin: 0; font-size: 13px; font-weight: bold; color: #991b1b; }
+        .admin-color-picker input[type="color"] { border: none; width: 32px; height: 32px; border-radius: 5px; cursor: pointer; background: none; }
+        
+        .btn-export { background: #0891b2; color: white; }
+        .btn-reset { background: #dc2626; color: white; }
+        .btn-delete-row { background: #ef4444; color: white; border: none; padding: 4px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { border-bottom: 1px solid #e2e8f0; padding: 12px 8px; text-align: center; }
+        th { background-color: var(--primary-light); color: var(--text-sub); font-weight: 600; border-top: 1px solid #e2e8f0; }
+        .badge-index { background: #e2e8f0; border-radius: 6px; padding: 3px 8px; font-weight: 700; font-size: 12px; color: #334155; }
+        .badge-admin { background: #fee2e2; color: #dc2626; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+
+        /* Modal Style */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: white; padding: 24px; border-radius: 14px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 14px; color: var(--text-main); }
+        .modal-body { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin-bottom: 20px; }
+        .modal-btns { display: flex; gap: 10px; }
+        .btn-cancel { background: #cbd5e1; color: #334155; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header-flex">
+        <h2>🎙️ 쇼케이스 녹음 출석</h2>
+        <div class="header-btns">
+            <button class="btn-top btn-share" onclick="shareLink()">🔗 링크 공유</button>
+            <button class="btn-top" id="adminBtn" onclick="toggleAdmin()">🔐 관리자</button>
+        </div>
+    </div>
+    <form id="attendanceForm">
+        <div class="form-group">
+            <label for="name">이름</label>
+            <input type="text" id="name" placeholder="이름을 입력하세요" required>
+        </div>
+        <div class="form-group">
+            <label for="studentId">학번</label>
+            <input type="text" id="studentId" placeholder="학번을 입력하세요 (예: 20261234)" required>
+        </div>
+        
+        <div class="form-group">
+            <label>세션 파트 선택</label>
+            <div class="session-grid" id="sessionGrid">
+                <div class="session-btn" onclick="selectSession('보컬')">보컬</div>
+                <div class="session-btn" onclick="selectSession('코러스')">코러스</div>
+                <div class="session-btn" onclick="selectSession('기타')">기타</div>
+                <div class="session-btn" onclick="selectSession('베이스')">베이스</div>
+                <div class="session-btn" onclick="selectSession('드럼')">드럼</div>
+                <div class="session-btn" onclick="selectSession('건반')">건반</div>
+                <div class="session-btn" onclick="selectSession('기타(기타)')" style="grid-column: span 3;">기타 (기타 세션)</div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>녹음 참여 시간 선택 <span style="font-weight: normal; color: #64748b;">(시작시각과 종료시각 선택)</span></label>
+            <div class="time-picker-wrapper">
+                <div class="time-section-title">🌅 새벽 / 오전 (00시 ~ 11시)</div>
+                <div class="time-grid" id="gridMorning"></div>
+
+                <div class="time-section-title">☀️ 오후 / 저녁 (12시 ~ 17시)</div>
+                <div class="time-grid" id="gridAfternoon"></div>
+
+                <div class="time-section-title">🌙 야간 / 밤 (18시 ~ 24시)</div>
+                <div class="time-grid" id="gridNight"></div>
+
+                <div class="time-summary-box">
+                    <div class="time-summary-text" id="timeDisplay">시간을 선택해주세요</div>
+                    <button type="button" class="btn-time-reset" onclick="resetTimeSelection()">다시 선택</button>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn-submit" id="openConfirmBtn" onclick="openConfirmModal()">등록 내용 확인하기</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="header-flex">
+        <h2>📋 등록 명단 목록 <span id="adminStatus"></span></h2>
+        <button class="btn-top" onclick="fetchSheetData()">🔄 동기화</button>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔎 이름 또는 학번으로 검색..." onkeyup="renderUI()">
+    </div>
+
+    <div class="date-tabs" id="dateTabs"></div>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>일련번호</th>
+                <th>작성일시</th>
+                <th>이름</th>
+                <th>학번</th>
+                <th>파트</th>
+                <th>참여 시간</th>
+                <th class="admin-col" style="display:none;">관리</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 데이터 영역 -->
+        </tbody>
+    </table>
+
+    <div class="admin-only" id="adminPanel">
+        <div style="font-weight: 700; color: #dc2626; margin-bottom: 10px;">⚡ 관리자 전용 제어판</div>
+        
+        <div class="admin-color-picker">
+            <label for="themeColor">🎨 메인 테마 색상 선택:</label>
+            <input type="color" id="themeColor" value="#2563eb" onchange="changeThemeColor(this.value)">
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-export" onclick="exportToExcel()">📊 엑셀 다운로드</button>
+            <button class="btn-reset" onclick="resetData()">🗑️ 현재 선택 날짜 삭제</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-card">
+        <div class="modal-title">📋 제출 내용 확인</div>
+        <div class="modal-body" id="modalBodyText"></div>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeConfirmModal()">수정하기</button>
+            <button class="btn-submit" id="submitBtn" onclick="submitForm()">확인 및 최종 제출</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 새 구글 Apps Script 웹 앱 URL 적용 완료
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQQctZp30x1PpVzbB5coBX-uRvHtbiaKRBM-OJJxDdFzjjDjYvWEMJ27dw1VFY7v-i/exec";
+    
+    const ADMIN_PW = "1234"; 
+    let isAdmin = false;
+    let selectedDateFilter = 'ALL';
+    
+    let selectedSessionPart = null;
+    let startTime = null;
+    let endTime = null;
+
+    let recordData = [];
+
+    function fetchSheetData() {
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = `<tr><td colspan="7" style="padding: 24px; color: #64748b;">🔄 구글 시트에서 최신 명단을 불러오는 중...</td></tr>`;
+        
+        fetch(GOOGLE_SCRIPT_URL)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    recordData = data.map(item => {
+                        const dateOnly = item.fullDateTime ? item.fullDateTime.split(' ')[0].replace(/\./g, '-').replace(/-$/, '') : '';
+                        return { ...item, dateOnly: dateOnly };
+                    });
+                    localStorage.setItem('recording_attendance', JSON.stringify(recordData));
+                    renderUI();
+                }
+            })
+            .catch(err => {
+                console.error('불러오기 실패:', err);
+                recordData = JSON.parse(localStorage.getItem('recording_attendance') || '[]');
+                renderUI();
+            });
+    }
+
+    function shareLink() {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(window.location.href);
+            alert('🔗 출석 폼 주소가 클립보드에 복사되었습니다!');
+        } else {
+            alert('주소창의 URL을 복사하여 공유해 주세요.');
+        }
+    }
+
+    function hexToHSL(hex) {
+        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        let r = parseInt(result[1], 16) / 255;
+        let g = parseInt(result[2], 16) / 255;
+        let b = parseInt(result[3], 16) / 255;
+
+        let max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+
+        if (max !== min) {
+            let d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        } else { h = s = 0; }
+        return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+    }
+
+    function changeThemeColor(hexColor) {
+        const hsl = hexToHSL(hexColor);
+        document.documentElement.style.setProperty('--primary', hexColor);
+        document.documentElement.style.setProperty('--bg', `hsl(${hsl.h}, ${Math.min(hsl.s, 40)}%, 94%)`);
+        document.documentElement.style.setProperty('--primary-light', `hsl(${hsl.h}, ${Math.min(hsl.s, 50)}%, 96%)`);
+        document.documentElement.style.setProperty('--primary-border', `hsl(${hsl.h}, ${Math.min(hsl.s, 45)}%, 85%)`);
+        localStorage.setItem('recording_theme_color', hexColor);
+    }
+
+    function loadSavedTheme() {
+        const savedColor = localStorage.getItem('recording_theme_color') || '#2563eb';
+        document.getElementById('themeColor').value = savedColor;
+        changeThemeColor(savedColor);
+    }
+
+    function selectSession(part) {
+        selectedSessionPart = part;
+        document.querySelectorAll('.session-btn').forEach(btn => {
+            btn.classList.toggle('selected', btn.innerText.includes(part));
+        });
+    }
+
+    function initTimeGrid() {
+        const gridMorning = document.getElementById('gridMorning');
+        const gridAfternoon = document.getElementById('gridAfternoon');
+        const gridNight = document.getElementById('gridNight');
+
+        for (let i = 0; i <= 24; i++) {
+            const btn = document.createElement('div');
+            btn.className = 'time-btn';
+            btn.innerText = `${String(i).padStart(2, '0')}:00`;
+            btn.dataset.hour = i;
+            btn.onclick = () => handleTimeClick(i);
+
+            if (i < 12) gridMorning.appendChild(btn);
+            else if (i < 18) gridAfternoon.appendChild(btn);
+            else gridNight.appendChild(btn);
+        }
+    }
+
+    function handleTimeClick(hour) {
+        if (startTime === null || (startTime !== null && endTime !== null)) {
+            startTime = hour;
+            endTime = null;
+        } else {
+            if (hour < startTime) startTime = hour;
+            else if (hour === startTime) endTime = hour < 24 ? hour + 1 : 24;
+            else endTime = hour;
+        }
+        updateTimeUI();
+    }
+
+    function resetTimeSelection() {
+        startTime = null;
+        endTime = null;
+        updateTimeUI();
+    }
+
+    function updateTimeUI() {
+        const buttons = document.querySelectorAll('.time-btn');
+        const display = document.getElementById('timeDisplay');
+
+        buttons.forEach(btn => {
+            const h = parseInt(btn.dataset.hour);
+            btn.classList.remove('selected', 'in-range');
+
+            if (startTime !== null && endTime === null && h === startTime) {
+                btn.classList.add('selected');
+            } else if (startTime !== null && endTime !== null) {
+                if (h === startTime || h === endTime) btn.classList.add('selected');
+                else if (h > startTime && h < endTime) btn.classList.add('in-range');
+            }
+        });
+
+        if (startTime !== null && endTime === null) {
+            display.innerText = `⏱️ ${String(startTime).padStart(2, '0')}:00 ~ (종료 시각 선택 중)`;
+        } else if (startTime !== null && endTime !== null) {
+            display.innerText = `✅ 선택 완료: ${String(startTime).padStart(2, '0')}:00 ~ ${String(endTime).padStart(2, '0')}:00 (${endTime - startTime}시간)`;
+        } else {
+            display.innerText = '시간을 선택해주세요';
+        }
+    }
+
+    function toggleAdmin() {
+        if (!isAdmin) {
+            if (prompt("관리자 비밀번호를 입력하세요:") === ADMIN_PW) {
+                isAdmin = true;
+                document.getElementById('adminBtn').innerText = "🔓 로그아웃";
+                document.getElementById('adminStatus').innerHTML = `<span class="badge-admin">관리자</span>`;
+                document.getElementById('adminPanel').classList.add('active');
+                document.querySelectorAll('.admin-col').forEach(el => el.style.display = '');
+            } else { alert("비밀번호가 틀렸습니다."); }
+        } else {
+            isAdmin = false;
+            document.getElementById('adminBtn').innerText = "🔐 관리자";
+            document.getElementById('adminStatus').innerHTML = "";
+            document.getElementById('adminPanel').classList.remove('active');
+            document.querySelectorAll('.admin-col').forEach(el => el.style.display = 'none');
+        }
+        renderUI();
+    }
+
+    function renderUI() {
+        const query = document.getElementById('searchInput').value.trim().toLowerCase();
+        const dates = [...new Set(recordData.map(item => item.dateOnly).filter(Boolean))].sort();
+        const tabsContainer = document.getElementById('dateTabs');
+        tabsContainer.innerHTML = '';
+        
+        const allTab = document.createElement('button');
+        allTab.className = `date-tab ${selectedDateFilter === 'ALL' ? 'active' : ''}`;
+        allTab.innerText = `전체 보기 (${recordData.length})`;
+        allTab.onclick = () => { selectedDateFilter = 'ALL'; renderUI(); };
+        tabsContainer.appendChild(allTab);
+
+        dates.forEach(date => {
+            const count = recordData.filter(d => d.dateOnly === date).length;
+            const tab = document.createElement('button');
+            tab.className = `date-tab ${selectedDateFilter === date ? 'active' : ''}`;
+            tab.innerText = `${date} (${count})`;
+            tab.onclick = () => { selectedDateFilter = date; renderUI(); };
+            tabsContainer.appendChild(tab);
+        });
+
+        let filtered = selectedDateFilter === 'ALL' 
+            ? recordData 
+            : recordData.filter(d => d.dateOnly === selectedDateFilter);
+
+        if (query) {
+            filtered = filtered.filter(item => 
+                (item.name && item.name.toLowerCase().includes(query)) ||
+                (item.studentId && item.studentId.includes(query))
+            );
+        }
+
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = '';
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="padding: 24px; color: #94a3b8;">등록된 데이터가 없습니다.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach(item => {
+            const adminCell = isAdmin ? `<td><button class="btn-delete-row" onclick="deleteSingleRow('${item.index}')">삭제</button></td>` : '';
+            const row = `<tr>
+                <td><span class="badge-index">${item.index}</span></td>
+                <td>${item.fullDateTime}</td>
+                <td><b>${item.name}</b></td>
+                <td>${item.studentId}</td>
+                <td>${item.session}</td>
+                <td><b>${item.participateTime}</b></td>
+                ${isAdmin ? adminCell : ''}
+            </tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+        
+        document.querySelectorAll('.admin-col').forEach(el => el.style.display = isAdmin ? '' : 'none');
+    }
+
+    function openConfirmModal() {
+        const name = document.getElementById('name').value.trim();
+        const studentId = document.getElementById('studentId').value.trim();
+
+        if (!name) return alert('이름을 입력해주세요.');
+        if (!studentId) return alert('학번을 입력해주세요.');
+        if (!selectedSessionPart) return alert('세션 파트를 선택해주세요.');
+        if (startTime === null) return alert('녹음 참여 시간을 선택해주세요.');
+
+        const startStr = String(startTime).padStart(2, '0');
+        const endVal = endTime === null ? (startTime < 24 ? startTime + 1 : 24) : endTime;
+        const endStr = String(endVal).padStart(2, '0');
+
+        document.getElementById('modalBodyText').innerHTML = `
+            <b>이름:</b> ${name}<br>
+            <b>학번:</b> ${studentId}<br>
+            <b>세션 파트:</b> ${selectedSessionPart}<br>
+            <b>참여 시간:</b> ${startStr}:00 ~ ${endStr}:00<br><br>
+            위 정보가 맞는지 확인해 주세요.
+        `;
+        document.getElementById('confirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+    }
+
+    function submitForm() {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "전송 중...";
+
+        const startStr = String(startTime).padStart(2, '0');
+        const endVal = endTime === null ? (startTime < 24 ? startTime + 1 : 24) : endTime;
+        const endStr = String(endVal).padStart(2, '0');
+        const timeString = `${startStr}:00 ~ ${endStr}:00`;
+
+        const now = new Date();
+        const dateOnly = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const fullDateTime = now.toLocaleString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+
+        const todayCount = recordData.filter(d => d.dateOnly === dateOnly).length + 1;
+        const dateCode = dateOnly.replace(/-/g, '').slice(2); 
+        const dailyIndex = `${dateCode}-${String(todayCount).padStart(3, '0')}`;
+
+        const item = {
+            index: dailyIndex,
+            fullDateTime: fullDateTime,
+            name: document.getElementById('name').value.trim(),
+            studentId: document.getElementById('studentId').value.trim(),
+            session: selectedSessionPart,
+            participateTime: timeString,
+            dateOnly: dateOnly
+        };
+
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+        })
+        .then(() => {
+            closeConfirmModal();
+            document.getElementById('name').value = '';
+            document.getElementById('studentId').value = '';
+            selectedSessionPart = null;
+            document.querySelectorAll('.session-btn').forEach(btn => btn.classList.remove('selected'));
+            resetTimeSelection();
+
+            alert(`등록이 완료되었습니다! (일련번호: ${dailyIndex})`);
+            fetchSheetData();
+        })
+        .catch(err => {
+            alert('구글 시트 전송 중 오류가 발생했습니다.');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "확인 및 최종 제출";
+        });
+    }
+
+    function deleteSingleRow(index) {
+        if (!isAdmin) return;
+        if (confirm(`일련번호 [${index}] 항목을 구글 시트 및 목록에서 삭제하시겠습니까?`)) {
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', index: index })
+            }).then(() => {
+                alert('삭제 요청이 전달되었습니다.');
+                fetchSheetData();
+            });
+        }
+    }
+
+    function exportToExcel() {
+        if (!isAdmin) return;
+        const filtered = selectedDateFilter === 'ALL' ? recordData : recordData.filter(d => d.dateOnly === selectedDateFilter);
+        if(filtered.length === 0) return alert('다운로드할 데이터가 없습니다.');
+        
+        const excelData = filtered.map(d => ({
+            '일련번호': d.index,
+            '작성일시': d.fullDateTime,
+            '이름': d.name,
+            '학번': d.studentId,
+            '세션': d.session,
+            '녹음 참여 시간': d.participateTime
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "녹음명단");
+        XLSX.writeFile(workbook, `쇼케이스_녹음명단_${selectedDateFilter}.xlsx`);
+    }
+
+    initTimeGrid();
+    loadSavedTheme();
+    fetchSheetData();
+</script>
+
+</body>
+</html>
