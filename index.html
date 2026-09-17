@@ -84,27 +84,29 @@
         .session-btn:hover { border-color: var(--primary); background: var(--primary-light); }
         .session-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
 
+        /* 새로 리뉴얼된 시간 선택 레이아웃 */
         .time-picker-wrapper { 
-            background: var(--primary-light); 
-            border: 1px solid var(--primary-border); 
+            background: #f8fafc; 
+            border: 1.5px solid var(--primary-border); 
             padding: 18px; 
-            border-radius: 12px; 
+            border-radius: 14px; 
             transition: all 0.3s ease;
         }
         
         .time-section-title {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
-            color: var(--text-sub);
-            margin: 12px 0 6px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: var(--primary);
+            margin: 14px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .time-section-title:first-child { margin-top: 0; }
 
         .time-grid { 
             display: grid; 
-            grid-template-columns: repeat(6, 1fr); 
+            grid-template-columns: repeat(5, 1fr); 
             gap: 6px; 
             user-select: none; 
         }
@@ -113,7 +115,7 @@
             background: white; 
             border: 1px solid #cbd5e1; 
             padding: 10px 0; 
-            font-size: 12px; 
+            font-size: 13px; 
             font-weight: 600; 
             text-align: center; 
             border-radius: 8px; 
@@ -123,12 +125,12 @@
         }
         .time-btn:hover { border-color: var(--primary); background: var(--primary-light); }
         .time-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
-        .time-btn.in-range { background: white; color: var(--primary); border-color: var(--primary); font-weight: 700; }
+        .time-btn.in-range { background: var(--primary-light); color: var(--primary); border-color: var(--primary-border); font-weight: 700; }
         
         .time-summary-box {
             margin-top: 16px;
             background: #ffffff;
-            border: 1.5px solid var(--primary-border);
+            border: 1.5px solid var(--primary);
             padding: 12px 16px;
             border-radius: 10px;
             display: flex;
@@ -140,12 +142,13 @@
             background: #f1f5f9; 
             color: #64748b; 
             border: 1px solid #cbd5e1; 
-            padding: 5px 10px; 
+            padding: 6px 12px; 
             font-size: 12px; 
             font-weight: 600;
             border-radius: 6px; 
             cursor: pointer; 
         }
+        .btn-time-reset:hover { background: #e2e8f0; }
 
         .date-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
         .date-tab { padding: 7px 14px; font-size: 13px; font-weight: 600; background: #e2e8f0; border: none; border-radius: 20px; cursor: pointer; color: #475569; }
@@ -159,7 +162,6 @@
         .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
         
         .btn-top { background: var(--admin-color); color: white; padding: 8px 12px; font-size: 12px; border-radius: 8px; width: auto; flex: none; }
-        .btn-share { background: #059669; }
 
         .admin-only { display: none; margin-top: 18px; padding: 16px; border: 1px dashed #ef4444; background-color: #fef2f2; border-radius: 10px; }
         .admin-only.active { display: block; }
@@ -185,6 +187,10 @@
         .modal-body { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin-bottom: 20px; }
         .modal-btns { display: flex; gap: 10px; }
         .btn-cancel { background: #cbd5e1; color: #334155; }
+
+        @media (max-width: 480px) {
+            .time-grid { grid-template-columns: repeat(4, 1fr); }
+        }
     </style>
 </head>
 <body>
@@ -193,7 +199,6 @@
     <div class="header-flex">
         <h2>🎙️ 쇼케이스 녹음 출석</h2>
         <div class="header-btns">
-            <button class="btn-top btn-share" onclick="shareLink()">🔗 링크 공유</button>
             <button class="btn-top" id="adminBtn" onclick="toggleAdmin()">🔐 관리자</button>
         </div>
     </div>
@@ -223,13 +228,13 @@
         <div class="form-group">
             <label>녹음 참여 시간 선택 <span style="font-weight: normal; color: #64748b;">(시작시각과 종료시각 선택)</span></label>
             <div class="time-picker-wrapper">
-                <div class="time-section-title">🌅 새벽 / 오전 (00시 ~ 11시)</div>
+                <div class="time-section-title">🌅 오전 (00:00 ~ 11:00)</div>
                 <div class="time-grid" id="gridMorning"></div>
 
-                <div class="time-section-title">☀️ 오후 / 저녁 (12시 ~ 17시)</div>
+                <div class="time-section-title">☀️ 오후 (12:00 ~ 17:00)</div>
                 <div class="time-grid" id="gridAfternoon"></div>
 
-                <div class="time-section-title">🌙 야간 / 밤 (18시 ~ 24시)</div>
+                <div class="time-section-title">🌙 야간 (18:00 ~ 24:00)</div>
                 <div class="time-grid" id="gridNight"></div>
 
                 <div class="time-summary-box">
@@ -300,7 +305,6 @@
 </div>
 
 <script>
-    // 새 구글 Apps Script 웹 앱 URL 적용 완료
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQQctZp30x1PpVzbB5coBX-uRvHtbiaKRBM-OJJxDdFzjjDjYvWEMJ27dw1VFY7v-i/exec";
     
     const ADMIN_PW = "1234"; 
@@ -334,15 +338,6 @@
                 recordData = JSON.parse(localStorage.getItem('recording_attendance') || '[]');
                 renderUI();
             });
-    }
-
-    function shareLink() {
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(window.location.href);
-            alert('🔗 출석 폼 주소가 클립보드에 복사되었습니다!');
-        } else {
-            alert('주소창의 URL을 복사하여 공유해 주세요.');
-        }
     }
 
     function hexToHSL(hex) {
@@ -393,6 +388,10 @@
         const gridMorning = document.getElementById('gridMorning');
         const gridAfternoon = document.getElementById('gridAfternoon');
         const gridNight = document.getElementById('gridNight');
+
+        gridMorning.innerHTML = '';
+        gridAfternoon.innerHTML = '';
+        gridNight.innerHTML = '';
 
         for (let i = 0; i <= 24; i++) {
             const btn = document.createElement('div');
