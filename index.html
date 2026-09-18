@@ -84,7 +84,6 @@
         .session-btn:hover { border-color: var(--primary); background: var(--primary-light); }
         .session-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
 
-        /* 새로 리뉴얼된 시간 선택 레이아웃 */
         .time-picker-wrapper { 
             background: #f8fafc; 
             border: 1.5px solid var(--primary-border); 
@@ -104,29 +103,54 @@
         }
         .time-section-title:first-child { margin-top: 0; }
 
-        .time-grid { 
+        .period-grid { 
             display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 6px; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px; 
             user-select: none; 
         }
         
-        .time-btn { 
+        .period-btn { 
             background: white; 
             border: 1px solid #cbd5e1; 
-            padding: 10px 0; 
-            font-size: 13px; 
-            font-weight: 600; 
+            padding: 10px 4px; 
             text-align: center; 
             border-radius: 8px; 
             cursor: pointer; 
             transition: all 0.15s ease; 
             color: #334155; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        .time-btn:hover { border-color: var(--primary); background: var(--primary-light); }
-        .time-btn.selected { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
-        .time-btn.in-range { background: var(--primary-light); color: var(--primary); border-color: var(--primary-border); font-weight: 700; }
-        
+        .period-btn .period-main {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .period-btn .period-sub {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .period-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+        .period-btn.selected { 
+            background: var(--primary); 
+            border-color: var(--primary); 
+        }
+        .period-btn.selected .period-main,
+        .period-btn.selected .period-sub {
+            color: white;
+        }
+        .period-btn.in-range { 
+            background: var(--primary-light); 
+            border-color: var(--primary-border); 
+        }
+        .period-btn.in-range .period-main {
+            color: var(--primary);
+        }
+
         .time-summary-box {
             margin-top: 16px;
             background: #ffffff;
@@ -188,8 +212,28 @@
         .modal-btns { display: flex; gap: 10px; }
         .btn-cancel { background: #cbd5e1; color: #334155; }
 
+        /* Auto-complete Popup Member List Item */
+        .member-list-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        .member-list-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .member-name { font-weight: 700; font-size: 15px; color: var(--text-main); }
+        .member-id { font-size: 13px; color: var(--text-sub); }
+
         @media (max-width: 480px) {
-            .time-grid { grid-template-columns: repeat(4, 1fr); }
+            .period-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -203,17 +247,9 @@
         </div>
     </div>
     <form id="attendanceForm">
+        <!-- 1. 세션 파트 선택 -->
         <div class="form-group">
-            <label for="name">이름</label>
-            <input type="text" id="name" placeholder="이름을 입력하세요" required>
-        </div>
-        <div class="form-group">
-            <label for="studentId">학번</label>
-            <input type="text" id="studentId" placeholder="학번을 입력하세요 (예: 20261234)" required>
-        </div>
-        
-        <div class="form-group">
-            <label>세션 파트 선택</label>
+            <label>1. 세션 파트 선택</label>
             <div class="session-grid" id="sessionGrid">
                 <div class="session-btn" onclick="selectSession('보컬')">보컬</div>
                 <div class="session-btn" onclick="selectSession('코러스')">코러스</div>
@@ -224,21 +260,25 @@
                 <div class="session-btn" onclick="selectSession('기타(기타)')" style="grid-column: span 3;">기타 (기타 세션)</div>
             </div>
         </div>
-        
+
+        <!-- 2. 이름 및 학번 -->
         <div class="form-group">
-            <label>녹음 참여 시간 선택 <span style="font-weight: normal; color: #64748b;">(시작시각과 종료시각 선택)</span></label>
+            <label for="name">2. 이름</label>
+            <input type="text" id="name" placeholder="파트 선택 시 목록에서 선택하거나 직접 입력" required>
+        </div>
+        <div class="form-group">
+            <label for="studentId">3. 학번</label>
+            <input type="text" id="studentId" placeholder="학번을 입력하세요 (예: 20261234)" required>
+        </div>
+        
+        <!-- 3. 교시(녹음 참여 시간) 선택 -->
+        <div class="form-group">
+            <label>4. 녹음 참여 시간 선택 <span style="font-weight: normal; color: #64748b;">(시작 교시와 종료 교시 선택)</span></label>
             <div class="time-picker-wrapper">
-                <div class="time-section-title">🌅 오전 (00:00 ~ 11:00)</div>
-                <div class="time-grid" id="gridMorning"></div>
-
-                <div class="time-section-title">☀️ 오후 (12:00 ~ 17:00)</div>
-                <div class="time-grid" id="gridAfternoon"></div>
-
-                <div class="time-section-title">🌙 야간 (18:00 ~ 24:00)</div>
-                <div class="time-grid" id="gridNight"></div>
+                <div class="period-grid" id="periodGrid"></div>
 
                 <div class="time-summary-box">
-                    <div class="time-summary-text" id="timeDisplay">시간을 선택해주세요</div>
+                    <div class="time-summary-text" id="timeDisplay">교시를 선택해주세요</div>
                     <button type="button" class="btn-time-reset" onclick="resetTimeSelection()">다시 선택</button>
                 </div>
             </div>
@@ -292,7 +332,7 @@
     </div>
 </div>
 
-<!-- Modal -->
+<!-- 제출 확인 모달 -->
 <div class="modal-overlay" id="confirmModal">
     <div class="modal-card">
         <div class="modal-title">📋 제출 내용 확인</div>
@@ -304,16 +344,57 @@
     </div>
 </div>
 
+<!-- 파트별 자동완성 선택 모달 -->
+<div class="modal-overlay" id="autocompleteModal">
+    <div class="modal-card">
+        <div class="modal-title" id="autoModalTitle">👤 팀원 선택</div>
+        <div class="modal-body" id="autoModalBody" style="max-height: 250px; overflow-y: auto;">
+            <!-- 파트별 명단이 여기에 동적으로 들어갑니다 -->
+        </div>
+        <div class="modal-btns">
+            <button class="btn-cancel" style="width:100%;" onclick="closeAutoModal()">직접 입력하기</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQQctZp30x1PpVzbB5coBX-uRvHtbiaKRBM-OJJxDdFzjjDjYvWEMJ27dw1VFY7v-i/exec";
     
+    // 미리 등록된 세션 파트별 학생 데이터
+    const MEMBER_DATABASE = [
+        { name: "오대선", studentId: "202502282", part: "기타" },
+        { name: "장용훈", studentId: "202502409", part: "기타" },
+        { name: "최세원", studentId: "202102444", part: "드럼" },
+        { name: "김윤지", studentId: "202502107", part: "건반" },
+        { name: "백서연", studentId: "202502205", part: "건반" },
+        { name: "최예진", studentId: "202502531", part: "베이스" },
+        { name: "임예림", studentId: "202502393", part: "건반" }
+    ];
+
+    // 교시 데이터 정의
+    const PERIOD_DATA = [
+        { period: 1, label: "1교시", time: "09:00~09:50", start: "09:00", end: "09:50" },
+        { period: 2, label: "2교시", time: "10:00~10:50", start: "10:00", end: "10:50" },
+        { period: 3, label: "3교시", time: "11:00~11:50", start: "11:00", end: "11:50" },
+        { period: 4, label: "4교시", time: "12:00~12:50", start: "12:00", end: "12:50" },
+        { period: 5, label: "5교시", time: "13:00~13:50", start: "13:00", end: "13:50" },
+        { period: 6, label: "6교시", time: "14:00~14:50", start: "14:00", end: "14:50" },
+        { period: 7, label: "7교시", time: "15:00~15:50", start: "15:00", end: "15:50" },
+        { period: 8, label: "8교시", time: "16:00~16:50", start: "16:00", end: "16:50" },
+        { period: 9, label: "9교시", time: "17:00~17:50", start: "17:00", end: "17:50" },
+        { period: 10, label: "10교시", time: "18:00~18:50", start: "18:00", end: "18:50" },
+        { period: 11, label: "11교시", time: "19:00~19:45", start: "19:00", end: "19:45" },
+        { period: 12, label: "12교시", time: "19:50~20:35", start: "19:50", end: "20:35" },
+        { period: 13, label: "13교시", time: "20:40~21:25", start: "20:40", end: "21:25" }
+    ];
+
     const ADMIN_PW = "1234"; 
     let isAdmin = false;
     let selectedDateFilter = 'ALL';
     
     let selectedSessionPart = null;
-    let startTime = null;
-    let endTime = null;
+    let startPeriod = null;
+    let endPeriod = null;
 
     let recordData = [];
 
@@ -382,70 +463,114 @@
         document.querySelectorAll('.session-btn').forEach(btn => {
             btn.classList.toggle('selected', btn.innerText.includes(part));
         });
+
+        const basePart = part.replace(/\(.*\)/, '').trim(); 
+        const matchedMembers = MEMBER_DATABASE.filter(m => m.part === basePart);
+
+        if (matchedMembers.length > 0) {
+            showAutoCompleteModal(part, matchedMembers);
+        }
     }
 
-    function initTimeGrid() {
-        const gridMorning = document.getElementById('gridMorning');
-        const gridAfternoon = document.getElementById('gridAfternoon');
-        const gridNight = document.getElementById('gridNight');
+    function showAutoCompleteModal(partName, members) {
+        const modalTitle = document.getElementById('autoModalTitle');
+        const modalBody = document.getElementById('autoModalBody');
 
-        gridMorning.innerHTML = '';
-        gridAfternoon.innerHTML = '';
-        gridNight.innerHTML = '';
+        modalTitle.innerText = `🎵 [${partName}] 팀원 선택`;
+        modalBody.innerHTML = '';
 
-        for (let i = 0; i <= 24; i++) {
+        members.forEach(m => {
+            const item = document.createElement('div');
+            item.className = 'member-list-item';
+            item.innerHTML = `
+                <span class="member-name">${m.name}</span>
+                <span class="member-id">${m.studentId}</span>
+            `;
+            item.onclick = () => {
+                document.getElementById('name').value = m.name;
+                document.getElementById('studentId').value = m.studentId;
+                closeAutoModal();
+            };
+            modalBody.appendChild(item);
+        });
+
+        document.getElementById('autocompleteModal').classList.add('active');
+    }
+
+    function closeAutoModal() {
+        document.getElementById('autocompleteModal').classList.remove('active');
+    }
+
+    function initPeriodGrid() {
+        const grid = document.getElementById('periodGrid');
+        grid.innerHTML = '';
+
+        PERIOD_DATA.forEach(p => {
             const btn = document.createElement('div');
-            btn.className = 'time-btn';
-            btn.innerText = `${String(i).padStart(2, '0')}:00`;
-            btn.dataset.hour = i;
-            btn.onclick = () => handleTimeClick(i);
-
-            if (i < 12) gridMorning.appendChild(btn);
-            else if (i < 18) gridAfternoon.appendChild(btn);
-            else gridNight.appendChild(btn);
-        }
+            btn.className = 'period-btn';
+            btn.dataset.period = p.period;
+            btn.innerHTML = `
+                <div class="period-main">${p.label}</div>
+                <div class="period-sub">${p.time}</div>
+            `;
+            btn.onclick = () => handlePeriodClick(p.period);
+            grid.appendChild(btn);
+        });
     }
 
-    function handleTimeClick(hour) {
-        if (startTime === null || (startTime !== null && endTime !== null)) {
-            startTime = hour;
-            endTime = null;
+    function handlePeriodClick(p) {
+        if (startPeriod === null || (startPeriod !== null && endPeriod !== null)) {
+            startPeriod = p;
+            endPeriod = null;
         } else {
-            if (hour < startTime) startTime = hour;
-            else if (hour === startTime) endTime = hour < 24 ? hour + 1 : 24;
-            else endTime = hour;
+            if (p < startPeriod) {
+                startPeriod = p;
+                endPeriod = null;
+            } else if (p === startPeriod) {
+                endPeriod = p;
+            } else {
+                endPeriod = p;
+            }
         }
-        updateTimeUI();
+        updatePeriodUI();
     }
 
     function resetTimeSelection() {
-        startTime = null;
-        endTime = null;
-        updateTimeUI();
+        startPeriod = null;
+        endPeriod = null;
+        updatePeriodUI();
     }
 
-    function updateTimeUI() {
-        const buttons = document.querySelectorAll('.time-btn');
+    function updatePeriodUI() {
+        const buttons = document.querySelectorAll('.period-btn');
         const display = document.getElementById('timeDisplay');
 
         buttons.forEach(btn => {
-            const h = parseInt(btn.dataset.hour);
+            const p = parseInt(btn.dataset.period);
             btn.classList.remove('selected', 'in-range');
 
-            if (startTime !== null && endTime === null && h === startTime) {
+            if (startPeriod !== null && endPeriod === null && p === startPeriod) {
                 btn.classList.add('selected');
-            } else if (startTime !== null && endTime !== null) {
-                if (h === startTime || h === endTime) btn.classList.add('selected');
-                else if (h > startTime && h < endTime) btn.classList.add('in-range');
+            } else if (startPeriod !== null && endPeriod !== null) {
+                if (p === startPeriod || p === endPeriod) btn.classList.add('selected');
+                else if (p > startPeriod && p < endPeriod) btn.classList.add('in-range');
             }
         });
 
-        if (startTime !== null && endTime === null) {
-            display.innerText = `⏱️ ${String(startTime).padStart(2, '0')}:00 ~ (종료 시각 선택 중)`;
-        } else if (startTime !== null && endTime !== null) {
-            display.innerText = `✅ 선택 완료: ${String(startTime).padStart(2, '0')}:00 ~ ${String(endTime).padStart(2, '0')}:00 (${endTime - startTime}시간)`;
+        if (startPeriod !== null && endPeriod === null) {
+            const startObj = PERIOD_DATA.find(item => item.period === startPeriod);
+            display.innerText = `⏱️ ${startObj.label} (${startObj.time}) ~ (종료 교시 선택 중)`;
+        } else if (startPeriod !== null && endPeriod !== null) {
+            const startObj = PERIOD_DATA.find(item => item.period === startPeriod);
+            const endObj = PERIOD_DATA.find(item => item.period === endPeriod);
+            
+            if (startPeriod === endPeriod) {
+                display.innerText = `✅ ${startObj.label} (${startObj.time})`;
+            } else {
+                display.innerText = `✅ ${startObj.label} ~ ${endObj.label} (${startObj.start} ~ ${endObj.end})`;
+            }
         } else {
-            display.innerText = '시간을 선택해주세요';
+            display.innerText = '교시를 선택해주세요';
         }
     }
 
@@ -529,20 +654,26 @@
         const name = document.getElementById('name').value.trim();
         const studentId = document.getElementById('studentId').value.trim();
 
+        if (!selectedSessionPart) return alert('세션 파트를 선택해주세요.');
         if (!name) return alert('이름을 입력해주세요.');
         if (!studentId) return alert('학번을 입력해주세요.');
-        if (!selectedSessionPart) return alert('세션 파트를 선택해주세요.');
-        if (startTime === null) return alert('녹음 참여 시간을 선택해주세요.');
+        if (startPeriod === null) return alert('녹음 참여 교시를 선택해주세요.');
 
-        const startStr = String(startTime).padStart(2, '0');
-        const endVal = endTime === null ? (startTime < 24 ? startTime + 1 : 24) : endTime;
-        const endStr = String(endVal).padStart(2, '0');
+        const startObj = PERIOD_DATA.find(item => item.period === startPeriod);
+        const endObj = endPeriod === null ? startObj : PERIOD_DATA.find(item => item.period === endPeriod);
+
+        let timeString = "";
+        if (startPeriod === (endPeriod || startPeriod)) {
+            timeString = `${startObj.label} (${startObj.time})`;
+        } else {
+            timeString = `${startObj.label}~${endObj.label} (${startObj.start}~${endObj.end})`;
+        }
 
         document.getElementById('modalBodyText').innerHTML = `
+            <b>세션 파트:</b> ${selectedSessionPart}<br>
             <b>이름:</b> ${name}<br>
             <b>학번:</b> ${studentId}<br>
-            <b>세션 파트:</b> ${selectedSessionPart}<br>
-            <b>참여 시간:</b> ${startStr}:00 ~ ${endStr}:00<br><br>
+            <b>참여 교시:</b> ${timeString}<br><br>
             위 정보가 맞는지 확인해 주세요.
         `;
         document.getElementById('confirmModal').classList.add('active');
@@ -557,10 +688,15 @@
         submitBtn.disabled = true;
         submitBtn.innerText = "전송 중...";
 
-        const startStr = String(startTime).padStart(2, '0');
-        const endVal = endTime === null ? (startTime < 24 ? startTime + 1 : 24) : endTime;
-        const endStr = String(endVal).padStart(2, '0');
-        const timeString = `${startStr}:00 ~ ${endStr}:00`;
+        const startObj = PERIOD_DATA.find(item => item.period === startPeriod);
+        const endObj = endPeriod === null ? startObj : PERIOD_DATA.find(item => item.period === endPeriod);
+
+        let timeString = "";
+        if (startPeriod === (endPeriod || startPeriod)) {
+            timeString = `${startObj.label} (${startObj.time})`;
+        } else {
+            timeString = `${startObj.label}~${endObj.label} (${startObj.start}~${endObj.end})`;
+        }
 
         const now = new Date();
         const dateOnly = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
@@ -632,7 +768,7 @@
             '이름': d.name,
             '학번': d.studentId,
             '세션': d.session,
-            '녹음 참여 시간': d.participateTime
+            '녹음 참여 교시': d.participateTime
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -641,7 +777,7 @@
         XLSX.writeFile(workbook, `쇼케이스_녹음명단_${selectedDateFilter}.xlsx`);
     }
 
-    initTimeGrid();
+    initPeriodGrid();
     loadSavedTheme();
     fetchSheetData();
 </script>
