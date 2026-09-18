@@ -155,22 +155,26 @@
             margin-top: 16px;
             background: #ffffff;
             border: 1.5px solid var(--primary);
-            padding: 12px 16px;
+            padding: 14px 16px;
             border-radius: 10px;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
+            gap: 10px;
+            text-align: center;
         }
         .time-summary-text { font-size: 14px; font-weight: 700; color: var(--primary); }
         .btn-time-reset { 
             background: #f1f5f9; 
             color: #64748b; 
             border: 1px solid #cbd5e1; 
-            padding: 6px 12px; 
-            font-size: 12px; 
+            padding: 8px 16px; 
+            font-size: 13px; 
             font-weight: 600;
             border-radius: 6px; 
             cursor: pointer; 
+            width: 100%;
+            max-width: 160px;
         }
         .btn-time-reset:hover { background: #e2e8f0; }
 
@@ -257,7 +261,7 @@
                 <div class="session-btn" onclick="selectSession('베이스')">베이스</div>
                 <div class="session-btn" onclick="selectSession('드럼')">드럼</div>
                 <div class="session-btn" onclick="selectSession('건반')">건반</div>
-                <div class="session-btn" onclick="selectSession('기타(기타)')" style="grid-column: span 3;">기타 (기타 세션)</div>
+                <div class="session-btn" onclick="selectSession('학생회')" style="grid-column: span 3;">학생회</div>
             </div>
         </div>
 
@@ -368,7 +372,16 @@
         { name: "김윤지", studentId: "202502107", part: "건반" },
         { name: "백서연", studentId: "202502205", part: "건반" },
         { name: "최예진", studentId: "202502531", part: "베이스" },
-        { name: "임예림", studentId: "202502393", part: "건반" }
+        { name: "임예림", studentId: "202502393", part: "건반" },
+        
+        // 학생회 명단
+        { name: "고효원", studentId: "202502019", part: "학생회" },
+        { name: "나혜민", studentId: "202502139", part: "학생회" },
+        { name: "이현수", studentId: "202502382", part: "학생회" },
+        { name: "조소영", studentId: "202502449", part: "학생회" },
+        { name: "최동경", studentId: "202502470", part: "학생회" },
+        { name: "탁시영", studentId: "202502500", part: "학생회" },
+        { name: "황수빈", studentId: "202502528", part: "학생회" }
     ];
 
     // 교시 데이터 정의
