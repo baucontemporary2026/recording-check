@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>쇼케이스 녹음 출석</title>
+    <title>쇼케이스 녹음 출석 및 채플 관리</title>
     <style>
         :root {
             --primary: #4f46e5;
@@ -20,23 +20,42 @@
             padding: 20px;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
+        }
+        /* 노트북 화면 등 넓은 화면에서 한 페이지에 가로로 넓게 배치되도록 설정 */
+        .wrapper {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 900px) {
+            .main-layout.logged-in {
+                grid-template-columns: 1fr 1fr; /* 로그인 시 출석폼과 명단이 가로로 나란히 표시 */
+            }
         }
         .container {
             background-color: var(--card-bg);
             padding: 30px;
             border-radius: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            width: 100%;
-            max-width: 480px;
+            box-sizing: border-box;
         }
         h2 {
             margin-top: 0;
-            font-size: 22px;
-            text-align: center;
+            font-size: 20px;
             color: var(--primary);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .form-group {
             margin-bottom: 20px;
@@ -50,16 +69,17 @@
         .session-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 8px;
         }
         .session-btn {
-            padding: 12px;
+            padding: 10px;
             text-align: center;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             background-color: #fff;
+            font-size: 13px;
             transition: all 0.2s ease;
         }
         .session-btn:hover {
@@ -71,87 +91,203 @@
             color: #fff;
             border-color: var(--primary);
         }
-        input[type="text"] {
+        input[type="text"], input[type="number"] {
             width: 100%;
-            padding: 12px;
+            padding: 10px 12px;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             box-sizing: border-box;
             font-size: 14px;
         }
-        input[type="text"]:focus {
+        input:focus {
             outline: none;
             border-color: var(--primary);
         }
-        /* 모달 스타일 생략 및 기본 버튼 */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .sub-fields {
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            display: none;
+        }
         .submit-btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
         }
         .submit-btn:hover {
             opacity: 0.9;
         }
+        /* 관리자 로그인 영역 스타일 */
+        .admin-auth-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            align-items: center;
+        }
+        .admin-auth-bar input {
+            width: 150px;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+        .admin-auth-bar button {
+            padding: 6px 12px;
+            background-color: #64748b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        /* 등록 명단 테이블 영역 (숨김 처리 기본) */
+        #adminSection {
+            display: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f1f5f9;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>🎙️ 쇼케이스 녹음 출석</h2>
-    
-    <form id="attendanceForm" onsubmit="handleSubmit(event)">
-        <!-- 1. 세션 파트 선택 -->
-        <div class="form-group">
-            <label>1. 세션 파트 선택</label>
-            <div class="session-grid" id="sessionGrid">
-                <div class="session-btn" onclick="selectSession('보컬')">보컬</div>
-                <div class="session-btn" onclick="selectSession('코러스')">코러스</div>
-                <div class="session-btn" onclick="selectSession('베이스')">베이스</div>
-                <div class="session-btn" onclick="selectSession('드럼')">드럼</div>
-                <div class="session-btn" onclick="selectSession('건반')">건반</div>
-                <div class="session-btn" onclick="selectSession('학생회')" style="grid-column: span 3;">학생회</div>
+<div class="wrapper">
+    <!-- 상단 관리자 로그인 바 -->
+    <div class="container" style="padding: 15px 30px;">
+        <div class="admin-auth-bar">
+            <span style="font-size: 13px; font-weight: 600; color: #64748b;">관리자 모드</span>
+            <input type="password" id="adminPassword" placeholder="관리자 비밀번호">
+            <button onclick="handleLogin()">로그인</button>
+        </div>
+    </div>
+
+    <!-- 메인 레이아웃 (로그인 여부에 따라 클래스 변경) -->
+    <div class="main-layout" id="mainLayout">
+        
+        <!-- 출석 등록 폼 -->
+        <div class="container">
+            <h2>🎙️ 쇼케이스 녹음 출석</h2>
+            
+            <form id="attendanceForm" onsubmit="handleSubmit(event)">
+                <!-- 1. 세션 파트 선택 (기타 삭제, 학생회 추가 완료) -->
+                <div class="form-group">
+                    <label>1. 세션 파트 선택</label>
+                    <div class="session-grid" id="sessionGrid">
+                        <div class="session-btn" onclick="selectSession('보컬')">보컬</div>
+                        <div class="session-btn" onclick="selectSession('코러스')">코러스</div>
+                        <div class="session-btn" onclick="selectSession('베이스')">베이스</div>
+                        <div class="session-btn" onclick="selectSession('드럼')">드럼</div>
+                        <div class="session-btn" onclick="selectSession('건반')">건반</div>
+                        <div class="session-btn" onclick="selectSession('학생회')" style="grid-column: span 3;">학생회</div>
+                    </div>
+                </div>
+
+                <!-- 2. 이름 입력 -->
+                <div class="form-group">
+                    <label>2. 이름</label>
+                    <input type="text" id="studentName" placeholder="이름을 입력하세요" required>
+                </div>
+
+                <!-- 3. 학번 입력 -->
+                <div class="form-group">
+                    <label>3. 학번</label>
+                    <input type="text" id="studentId" placeholder="학번을 입력하세요 (예: 20261234)" required>
+                </div>
+
+                <!-- 4. 녹음 참여 시간 -->
+                <div class="form-group">
+                    <label>4. 녹음 참여 시간</label>
+                    <input type="text" placeholder="예: 3교시 ~ 4교시">
+                </div>
+
+                <!-- 5. 채플 여부 칸 -->
+                <div class="form-group">
+                    <label>5. 당일 채플이 있습니까?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="chapelCheck" value="yes" onclick="toggleChapelFields(true)"> 예</label>
+                        <label><input type="radio" name="chapelCheck" value="no" onclick="toggleChapelFields(false)" checked> 아니오</label>
+                    </div>
+                    
+                    <!-- '예' 선택 시 나타나는 세부 입력칸 -->
+                    <div id="chapelSubFields" class="sub-fields">
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-size: 13px;">자리 입력</label>
+                            <input type="text" id="chapelSeat" placeholder="예: 3층 가구역 12번">
+                        </div>
+                        <div>
+                            <label style="font-size: 13px;">몇 교시 채플인지 (숫자 입력)</label>
+                            <input type="number" id="chapelPeriod" placeholder="예: 3" min="1" max="9">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">출석 등록하기</button>
+            </form>
+        </div>
+
+        <!-- 등록 명단 확인 칸 (로그인 시에만 노출) -->
+        <div class="container" id="adminSection">
+            <h2>📋 등록 명단 목록 <span style="font-size: 13px; color: #10b981;">(관리자 인증됨)</span></h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>파트</th>
+                            <th>이름</th>
+                            <th>학번</th>
+                            <th>채플 정보</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberTableBody">
+                        <tr>
+                            <td colspan="4" style="color: #64748b;">등록된 데이터가 없습니다.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- 2. 이름 및 학번 입력 -->
-        <div class="form-group">
-            <label>2. 이름</label>
-            <input type="text" id="studentName" placeholder="이름을 입력하세요" required>
-        </div>
-        <div class="form-group">
-            <label>3. 학번</label>
-            <input type="text" id="studentId" placeholder="학번을 입력하세요 (예: 20261234)" required>
-        </div>
-
-        <button type="submit" class="submit-btn">출석 등록하기</button>
-    </form>
+    </div>
 </div>
 
-<!-- 자동완성 모달 영역 (필요시 구현부 연동) -->
-<div id="autoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
-    <div style="background:white; padding:20px; border-radius:10px; width:300px;">
-        <h3 id="autoModalTitle">🎵 명단 선택</h3>
-        <div id="autoModalBody"></div>
-        <button onclick="closeAutoCompleteModal()" style="margin-top:10px; width:100%; padding:8px;">닫기</button>
+<!-- 자동완성 모달 -->
+<div id="autoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index: 1000;">
+    <div style="background:white; padding:20px; border-radius:12px; width:320px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+        <h3 id="autoModalTitle" style="margin-top:0; font-size: 16px; color: #4f46e5;">🎵 명단 선택</h3>
+        <div id="autoModalBody" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div>
+        <button onclick="closeAutoCompleteModal()" style="width:100%; padding:8px; background: #e2e8f0; border:none; border-radius:6px; cursor:pointer; font-weight: 600;">닫기</button>
     </div>
 </div>
 
 <script>
-    // 미리 등록된 세션 파트별 학생 데이터 (기타 삭제, 학생회 7명 포함)
+    // 멤버 데이터베이스 (학생회 7명 포함)
     const MEMBER_DATABASE = [
         { name: "최세원", studentId: "202102444", part: "드럼" },
         { name: "김윤지", studentId: "202502107", part: "건반" },
         { name: "백서연", studentId: "202502205", part: "건반" },
         { name: "최예진", studentId: "202502531", part: "베이스" },
         { name: "임예림", studentId: "202502393", part: "건반" },
-
-        // 학생회 명단 (7명)
         { name: "고효원", studentId: "202502019", part: "학생회" },
         { name: "나혜민", studentId: "202502139", part: "학생회" },
         { name: "이현수", studentId: "202502382", part: "학생회" },
@@ -162,6 +298,7 @@
     ];
 
     let selectedSessionPart = '';
+    let submittedList = [];
 
     function selectSession(part) {
         selectedSessionPart = part;
@@ -170,7 +307,6 @@
         });
 
         const matchedMembers = MEMBER_DATABASE.filter(m => m.part === part);
-
         if (matchedMembers.length > 0) {
             showAutoCompleteModal(part, matchedMembers);
         }
@@ -186,10 +322,13 @@
 
         members.forEach(m => {
             const item = document.createElement('div');
-            item.style.padding = '8px';
+            item.style.padding = '10px';
             item.style.cursor = 'pointer';
-            item.style.borderBottom = '1px solid #eee';
+            item.style.borderBottom = '1px solid #f1f5f9';
+            item.style.fontSize = '14px';
             item.innerText = `${m.name} (${m.studentId})`;
+            item.onmouseover = () => item.style.backgroundColor = '#f8fafc';
+            item.onmouseout = () => item.style.backgroundColor = 'transparent';
             item.onclick = () => {
                 document.getElementById('studentName').value = m.name;
                 document.getElementById('studentId').value = m.studentId;
@@ -205,11 +344,63 @@
         document.getElementById('autoModal').style.display = 'none';
     }
 
+    function toggleChapelFields(show) {
+        const subFields = document.getElementById('chapelSubFields');
+        subFields.style.display = show ? 'block' : 'none';
+    }
+
+    function handleLogin() {
+        const pwd = document.getElementById('adminPassword').value;
+        if (pwd === "admin1234") { // 비밀번호 설정
+            document.getElementById('adminSection').style.display = 'block';
+            document.getElementById('mainLayout').classList.add('logged-in');
+            alert("관리자 로그인 성공! 등록 명단이 표시됩니다.");
+        } else {
+            alert("비밀번호가 틀렸습니다.");
+        }
+    }
+
     function handleSubmit(event) {
         event.preventDefault();
         const name = document.getElementById('studentName').value;
         const studentId = document.getElementById('studentId').value;
-        alert(`출석 등록 완료!\n파트: ${selectedSessionPart}\n이름: ${name}\n학번: ${studentId}`);
+        const hasChapel = document.querySelector('input[name="chapelCheck"]:checked').value === 'yes';
+        const chapelSeat = hasChapel ? document.getElementById('chapelSeat').value : '없음';
+        const chapelPeriod = hasChapel ? document.getElementById('chapelPeriod').value + '교시' : '-';
+
+        const newItem = {
+            part: selectedSessionPart || '미선택',
+            name: name,
+            studentId: studentId,
+            chapel: hasChapel ? `${chapelSeat} (${chapelPeriod})` : '없음'
+        };
+
+        submittedList.push(newItem);
+        updateTable();
+        alert(`출석 등록이 완료되었습니다!`);
+        document.getElementById('attendanceForm').reset();
+        toggleChapelFields(false);
+        selectedSessionPart = '';
+        document.querySelectorAll('.session-btn').forEach(btn => btn.classList.remove('selected'));
+    }
+
+    function updateTable() {
+        const tbody = document.getElementById('memberTableBody');
+        tbody.innerHTML = '';
+        if (submittedList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="color: #64748b;">등록된 데이터가 없습니다.</td></tr>`;
+            return;
+        }
+        submittedList.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.part}</td>
+                <td>${item.name}</td>
+                <td>${item.studentId}</td>
+                <td>${item.chapel}</td>
+            `;
+            tbody.appendChild(row);
+        });
     }
 </script>
 
